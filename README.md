@@ -18,7 +18,9 @@ This tool uses OpenAI's GPT model to rewrite resume content to better match a jo
 
 ## Demo
 
-👉 [Try it Live](https://billsantry.github.io/resume-rewrite-bot/)
+🚧 Demo coming soon!  
+For now, you can clone the project and run it locally using your own OpenAI API key.
+
 
 ## How It Works
 
