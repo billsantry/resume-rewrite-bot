@@ -1,5 +1,11 @@
 # Resume Rewrite Bot
 
+![MIT License](https://img.shields.io/badge/license-MIT-blue)
+![Built with OpenAI](https://img.shields.io/badge/Built%20with-OpenAI-blueviolet)
+
+
+Turn your resume bullets into job-matching achievements with AI – in seconds, right in your browser.
+
 **An open-source, AI-powered tool to optimize your resume bullet points for any job description.**  
 This tool uses OpenAI's GPT model to rewrite resume content to better match a job description, improving clarity, tone, and ATS (Applicant Tracking System) compatibility.
 
@@ -12,7 +18,7 @@ This tool uses OpenAI's GPT model to rewrite resume content to better match a jo
 
 ## Demo
 
-> [Insert screenshot or link if hosted on GitHub Pages]
+👉 [Try it Live](https://billsantry.github.io/resume-rewrite-bot/)
 
 ## How It Works
 
@@ -33,7 +39,7 @@ git clone https://github.com/YOUR-USERNAME/resume-rewrite-bot.git
 cd resume-rewrite-bot
 ```
 
-Or [Download ZIP](https://github.com/YOUR-USERNAME/resume-rewrite-bot/archive/refs/heads/main.zip) and extract it.
+Or [Download ZIP](https://github.com/billsantry/resume-rewrite-bot/archive/refs/heads/main.zip) and extract it.
 
 ### 2. Open in Browser
 
@@ -66,5 +72,5 @@ MIT License
 
 ## Credits
 
-Created by [Your Name](https://your-website.com)  
+Created by [Bill Santry](https://billsantry.com)  
 Inspired by the idea that **great resumes shouldn't require great writing skills—just the right AI support.**
