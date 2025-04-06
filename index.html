@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Resume Rewrite Bot</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Resume Rewrite Bot</h1>
+
+    <label for="apiKey">Enter Your OpenAI API Key:</label>
+    <input type="password" id="apiKey" placeholder="sk-..." />
+
+    <label for="jobDesc">Paste the Job Description:</label>
+    <textarea id="jobDesc" rows="6" placeholder="Job description..."></textarea>
+
+    <label for="resume">Paste Your Resume Section:</label>
+    <textarea id="resume" rows="6" placeholder="Your current resume bullet points..."></textarea>
+
+    <button onclick="rewriteResume()">Rewrite My Resume</button>
+
+    <h2>Rewritten Resume:</h2>
+    <pre id="result"></pre>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
