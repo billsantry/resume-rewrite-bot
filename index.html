@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +11,7 @@
   <div class="container">
     <h1>Resume Rewrite Bot</h1>
 
-    <label for="apiKey">Enter Your OpenAI API Key:</label>
+    <label for="apiKey">Enter Your OpenAI API Key:<br><a href="https://platform.openai.com/account/api-keys" target="_blank" style="font-weight: normal; font-size: 0.9em;">Don’t have one? Get your key from OpenAI</a></label>
     <input type="password" id="apiKey" placeholder="sk-..." />
 
     <label for="jobDesc">Paste the Job Description:</label>
@@ -19,10 +20,17 @@
     <label for="resume">Paste Your Resume Section:</label>
     <textarea id="resume" rows="6" placeholder="Your current resume bullet points..."></textarea>
 
+    <button onclick="runMatchMeter()">Run MatchMeter</button>
+    <div id="matchMeterOutput" class="matchmeter-box"></div>
+
     <button onclick="rewriteResume()">Rewrite My Resume</button>
 
+    <div id="status" class="status"></div>
+    <div id="spinner" class="spinner" style="display: none;"></div>
+
     <h2>Rewritten Resume:</h2>
-    <pre id="result"></pre>
+    <div id="result" contenteditable="true" class="formatted-output"></div>
+    <button id="copyBtn" onclick="copyToClipboard()" style="display: none;">📋 Copy to Clipboard</button>
   </div>
 
   <script src="script.js"></script>
