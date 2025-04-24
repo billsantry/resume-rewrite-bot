@@ -96,4 +96,4 @@ MIT License
 
 ## Credits
 
-Inspired by the idea that **great resumes shouldn't require great writing skills—just the right AI support.**
+Created by [**Bill Santry**](https://www.linkedin.com/in/billsantry/). And inspired by the idea that **great resumes shouldn't require great writing skills—just the right AI support.**
