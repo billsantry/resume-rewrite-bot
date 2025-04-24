@@ -34,6 +34,8 @@ MatchMeter now plays a more central role in helping you evaluate your fit before
 
 ## Demo
 
+
+
 Try it yourself! Open `index.html` in your browser and test it live with your own resume and any job description.
 
 ---
@@ -54,11 +56,11 @@ Try it yourself! Open `index.html` in your browser and test it live with your ow
 ### 1. Clone or Download
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/resume-rewrite-bot.git
+git clone https://github.com/billsantry/resume-rewrite-bot.git
 cd resume-rewrite-bot
 ```
 
-Or [Download ZIP](https://github.com/YOUR-USERNAME/resume-rewrite-bot/archive/refs/heads/main.zip) and extract it.
+Or [Download ZIP](https://github.com/billsantry/resume-rewrite-bot/archive/refs/heads/main.zip) and extract it.
 
 ### 2. Open in Browser
 
