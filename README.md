@@ -1,11 +1,9 @@
+
 # Resume Rewrite Bot
 
 [Jump to MatchMeter ➡️](#features)
 
 [Features](#features) • [Demo](#demo) • [How It Works](#how-it-works) • [Getting Started](#getting-started)
-
-![MIT License](https://img.shields.io/badge/license-MIT-blue)
-![Built with OpenAI](https://img.shields.io/badge/Built%20with-OpenAI-blueviolet)
 
 **Turn your resume bullets into job-matching achievements with AI – in seconds, right in your browser.**
 
@@ -24,7 +22,7 @@ MatchMeter now plays a more central role in helping you evaluate your fit before
 
 ---
 
-## Features 🔍
+## Features
 
 💡 **MatchMeter isn’t just a score — it’s a signal.** Whether you’re deciding to apply or prepping your resume, MatchMeter helps you know if a job is a strong match before you invest your time.
 
