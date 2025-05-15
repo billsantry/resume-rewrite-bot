@@ -1,144 +1,101 @@
 // static/script.js
 
-// Helper to mark a step complete or active
-function mark(stepId, isActive) {
-  const el = document.getElementById(stepId);
-  if (!el) return;
-  el.classList.toggle("fw-bold", isActive);
-  el.classList.toggle("text-primary", isActive);
-  el.classList.toggle("text-muted", !isActive);
-}
-
 // Minimum score before allowing a rewrite
-let MIN_MATCH_SCORE = 5;
+const MIN_MATCH_SCORE = 5;
 
-// Run MatchMeter (Gap Analysis) with animated thinking bar
+// Run MatchMeter (Gap Analysis)
 async function runMatchMeter() {
-  const jobDesc = document.getElementById("jobDesc").value.trim();
-  const resume = document.getElementById("resume").value.trim();
-  const output = document.getElementById("matchMeterOutput");
+  const jobDesc    = document.getElementById("jobDesc").value.trim();
+  const resume     = document.getElementById("resume").value.trim();
+  const output     = document.getElementById("matchMeterOutput");
+  const spinner    = document.getElementById("spinner");
   const rewriteBtn = document.getElementById("rewriteBtn");
-  const warning = document.getElementById("lowMatchWarning");
+  const warning    = document.getElementById("lowMatchWarning");
 
   if (!jobDesc || !resume) {
     alert("Please fill in both job description and resume fields.");
     return;
   }
 
-  // Reset UI and show thinking bar
-  output.innerHTML = `
-    <div class="match-meter mt-3">
-      <h5><strong>MatchMeter Thinking...</strong></h5>
-      <div class="progress" style="height: 20px; background: #e9ecef;">
-        <div class="progress-bar" role="progressbar" style="width: 0%; background-color: #3498db;"></div>
-      </div>
-    </div>
-  `;
+  // Reset UI
+  spinner.style.display = "block";
+  output.innerHTML      = "";
   warning.style.display = "none";
-  rewriteBtn.disabled = true;
-
-  // Animate the thinking bar back and forth
-  const bar = output.querySelector('.progress-bar');
-  let width = 0;
-  let direction = 1;
-  const animate = () => {
-    width += direction * 5;
-    if (width >= 100) direction = -1;
-    if (width <= 0) direction = 1;
-    bar.style.width = width + "%";
-  };
-  const intervalId = setInterval(animate, 100);
+  rewriteBtn.disabled   = true;
 
   try {
-    const res = await fetch("/matchmeter", {
+    const res  = await fetch("/matchmeter", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ job_description: jobDesc, resume_text: resume })
     });
     const json = await res.json();
 
-    clearInterval(intervalId);
-
     if (!res.ok) {
       output.innerHTML = `<p class="text-danger"><strong>Error:</strong> ${json.error}</p>`;
       return;
     }
 
-    const score = parseFloat(json.score) || 0;
-    let feedbackHTML = json.feedback_html || "";
-    feedbackHTML = feedbackHTML.replace(/^\s*\d{1,2}\/10\s*/m, "");
+    const score        = parseFloat(json.score) || 0;
+    const feedbackHTML = json.feedback_html || "";
 
     // Warn & disable rewrite if score < threshold
     if (score < MIN_MATCH_SCORE) {
       warning.style.display = "block";
-      rewriteBtn.disabled = true;
+      rewriteBtn.disabled   = true;
     } else {
       warning.style.display = "none";
-      rewriteBtn.disabled = false;
+      rewriteBtn.disabled   = false;
     }
 
-    // Determine bar color
+    // Color by score bracket
     let barColor;
-    if (score <= 2) barColor = "#f44336";
-    else if (score <= 5) barColor = "#ff9800";
-    else if (score <= 7) barColor = "#ffeb3b";
-    else barColor = "#4caf50";
+    if (score <= 2)      barColor = "#f44336"; // red
+    else if (score <= 5) barColor = "#ff9800"; // orange
+    else if (score <= 7) barColor = "#ffeb3b"; // yellow
+    else                  barColor = "#4caf50"; // green
 
     const pct = Math.min(Math.max(score * 10, 0), 100);
 
-    // Render final gauge and feedback
+    // Render gauge + server-generated feedback HTML
     output.innerHTML = `
       <div class="match-meter mt-3">
         <h5><strong>MatchMeter Score: ${score}/10</strong></h5>
         <div class="progress" style="height: 20px; background: #e9ecef;">
-          <div class="progress-bar" role="progressbar" style="width: ${pct}%; background-color: ${barColor};"></div>
+          <div class="progress-bar"
+               role="progressbar"
+               style="width: ${pct}%; background-color: ${barColor};">
+          </div>
         </div>
       </div>
-      <div class="mt-3 report-section">${feedbackHTML}</div>
+      <div class="mt-3 report-section">
+        ${feedbackHTML}
+      </div>
     `;
   } catch (err) {
-    clearInterval(intervalId);
     output.innerHTML = `<p class="text-danger"><strong>Error contacting API:</strong> ${err.message}</p>`;
+  } finally {
+    spinner.style.display = "none";
   }
 }
 
 // Rewrite Resume
 async function rewriteResume() {
-  const jobDesc = document.getElementById("jobDesc").value.trim();
+  const jobDesc   = document.getElementById("jobDesc").value.trim();
   const resumeTxt = document.getElementById("resume").value.trim();
   const resultBox = document.getElementById("result");
-  const spinnerText = document.getElementById("loading-text");
+  const spinner   = document.getElementById("spinner");
 
-  const phrases = [
-    "Polishing professional points…",
-    "Refining résumé readability…",
-    "Boosting bullet brilliance…",
-    "Aligning accomplishments accurately…",
-    "Structuring success stories…",
-    "Curating career clarity…",
-    "Enhancing experience excerpts…",
-    "Formatting for focus…",
-    "Elevating employment entries…",
-    "Sharpening skills showcase…",
-    "Perfecting professional profile…",
-    "Highlighting hiring highlights…"
-  ];
-  let idx = 0;
-  let rotateInterval;
-
-  if (!jobDesc || !resumeTxt) {
-    alert("Please fill in both job description and resume fields before rewriting.");
+  if (!resumeTxt) {
+    alert("Please enter your resume text.");
     return;
   }
 
-  document.getElementById("spinner").style.display = "block";
-  spinnerText.textContent = phrases[idx++];
-  rotateInterval = setInterval(() => { spinnerText.textContent = phrases[idx % phrases.length]; idx++; }, 2000);
-
-  resultBox.innerHTML = "";
+  spinner.style.display = "block";
+  resultBox.innerHTML   = "";
 
   try {
-    const res = await fetch("/rewrite", {
+    const res  = await fetch("/rewrite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ job_description: jobDesc, resume_text: resumeTxt })
@@ -150,25 +107,22 @@ async function rewriteResume() {
       return;
     }
 
-    let html = json.rewritten_html || "";
-    html = html.replace(/^```html\s*/, "").replace(/```\s*$/, "");
-    resultBox.innerHTML = html;
+    // Directly inject the server-generated HTML
+    resultBox.innerHTML = json.rewritten_html || "";
     document.getElementById("copyBtn").style.display = "inline-block";
   } catch (err) {
     resultBox.innerHTML = `<p class="text-danger"><strong>Error contacting API:</strong> ${err.message}</p>`;
   } finally {
-    document.getElementById("spinner").style.display = "none";
-    clearInterval(rotateInterval);
-    spinnerText.textContent = "";
+    spinner.style.display = "none";
   }
 }
 
 // Copy to Clipboard
 function copyToClipboard() {
   const resultBox = document.getElementById("result");
-  const range = document.createRange();
+  const range     = document.createRange();
   range.selectNodeContents(resultBox);
-  const sel = window.getSelection();
+  const sel       = window.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
   document.execCommand("copy");

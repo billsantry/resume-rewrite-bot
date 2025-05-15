@@ -4,20 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ResumeRewriter</title>
-  <!-- Font Awesome Pro Kit -->
-  <script src="https://kit.fontawesome.com/960f50b335.js" crossorigin="anonymous"></script>
-  <!-- Favicon -->
-  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
-  <!-- Bootstrap CSS (optional) -->
+  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Your Custom JS -->
-  <script defer src="{{ url_for('static', filename='script.js') }}"></script>
+  <!-- Font Awesome Icons -->
+  <script src="https://kit.fontawesome.com/960f50b335.js" crossorigin="anonymous"></script>
+  <!-- Favicon (place favicon.ico in your static folder) -->
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
   <style>
     body {
       font-family: Arial, sans-serif;
       background-color: #f8f9fa;
       padding: 2rem;
-      padding-bottom: 70px;
+      padding-bottom: 70px; /* reserve space for footer */
     }
     .container { max-width: 800px; margin: auto; }
     .spinner {
@@ -31,66 +29,80 @@
     @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
     footer.sticky-footer {
       position: fixed;
-      left: 0; bottom: 0;
-      width: 100%; height: 50px;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 50px;
       background: #fff;
       border-top: 1px solid #dee2e6;
       box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       z-index: 10;
     }
-    footer.sticky-footer a { color: #6c757d; text-decoration: none; }
+    footer.sticky-footer a {
+      color: #6c757d;
+      text-decoration: none;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1 class="text-center">
-      <i class="fa-solid fa-user-pen text-primary me-1" style="font-size:2.25rem;"></i>
-      <strong>ResumeRewriter</strong>
-    </h1>
+   <h1 class="text-center">
+  <i class="fa-solid fa-user-pen text-primary me-1" style="font-size: 2.25rem;"></i><strong>ResumeRewriter</strong>
+</h1>
     <p class="text-center text-muted">
       Quickly analyze your resume’s fit for a job and get a polished, AI-enhanced version.
     </p>
 
-    <div class="mb-3">
-      <label for="jobDesc"><strong>Job Description:</strong></label>
-      <textarea id="jobDesc" class="form-control" rows="6" placeholder="Job description..." required></textarea>
-    </div>
+    <label for="jobDesc"><strong>Paste the Job Description:</strong></label>
+    <textarea id="jobDesc" class="form-control mb-3" rows="6"
+              placeholder="Job description..."></textarea>
 
-    <div class="mb-3">
-      <label for="resume"><strong>Your Resume:</strong></label>
-      <textarea id="resume" class="form-control" rows="6" placeholder="Paste resume section..." required></textarea>
-    </div>
+    <label for="resume"><strong>Paste Your Resume Section:</strong></label>
+    <textarea id="resume" class="form-control mb-3" rows="6"
+              placeholder="Your current resume bullet points..."></textarea>
 
-    <button type="button" class="btn btn-primary w-100" onclick="runMatchMeter()">
+    <button onclick="runMatchMeter()" class="btn btn-primary w-100">
       <strong>Run MatchMeter</strong>
     </button>
     <div id="matchMeterOutput" class="mt-3 p-3 border rounded bg-light">
       MatchMeter results will appear here.
     </div>
 
-    <div id="lowMatchWarning" class="alert alert-warning mt-3" style="display:none;">
-      ⚠️ Score below threshold. Revise resume or choose closer-fit role.
+    <!-- Low-match warning -->
+    <div id="lowMatchWarning" class="alert alert-warning mt-3" style="display: none;">
+      ⚠️ Your MatchMeter score is below the minimum threshold (5/10).  
+      Consider revising your resume or choosing a closer-fit role before rewriting.
     </div>
 
-    <button id="rewriteBtn" type="button" class="btn btn-secondary w-100 mt-3" onclick="rewriteResume()" disabled>
+    <button onclick="rewriteResume()"
+            class="btn btn-secondary w-100 mt-3"
+            disabled id="rewriteBtn">
       <strong>Rewrite My Resume</strong>
     </button>
 
+    <!-- centered spinner + rotating text -->
     <div class="text-center my-3">
       <div id="spinner" class="spinner"></div>
       <p id="loading-text" class="mt-2 mb-0 text-muted"></p>
     </div>
 
     <h2 class="mt-4"><strong>Rewritten Resume:</strong></h2>
-    <div id="result" contenteditable="true" class="p-3 border rounded bg-white"></div>
-    <button id="copyBtn" class="btn btn-secondary mt-3" onclick="copyToClipboard()" style="display:none;">
+    <p class="text-muted">
+      Your enhanced resume content will appear below. You can copy it for easy use.
+    </p>
+    <div id="result" contenteditable="true" class="p-3 border rounded" style="background-color: #fff;"></div>
+    <button id="copyBtn" onclick="copyToClipboard()"
+            class="btn btn-secondary mt-3" style="display: none;">
       <strong>📋 Copy to Clipboard</strong>
     </button>
 
     <div class="mt-5 text-center">
-      <a href="mailto:billsantry@gmail.com?subject=Feedback" class="btn btn-outline-dark">
-        💬 Report Comments or Bugs
+      <a href="mailto:billsantry@gmail.com?subject=ResumeRewriter%20Feedback"
+         class="btn btn-outline-dark">
+        💬 Report Comments, Compliments or Bugs
       </a>
     </div>
   </div>
@@ -98,5 +110,7 @@
   <footer class="sticky-footer">
     <p>&copy; <a href="mailto:billsantry@gmail.com">Bill Santry</a></p>
   </footer>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
