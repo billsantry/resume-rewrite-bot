@@ -1,9 +1,3 @@
-# Front-end updates required:
-# - In index.html:
-#     * Add a container with id="rewritten-resume" to display the HTML version of the rewritten resume.
-# - In script.js:
-#     * After receiving the JSON response, set innerHTML of that container using `data.rewritten_html`.
-
 import os
 import re
 import logging
@@ -35,30 +29,43 @@ def rewrite_resume():
     if not original:
         return jsonify(error="No resume text provided."), 400
 
-    # Prompt model to emit HTML only: name & contact bold, headings bold, bullets lists, body paragraphs plain
+    # Fence the original text so bullets aren’t dropped
+    original_block = f"```\n{original}\n```"
+
+    # Prompt model to rewrite every bullet in place, preserving all items
     prompt = (
-        "You are an expert resume writer. ONLY use the facts below—do NOT fabricate any details.\n"
-        "Include the candidate’s full name and contact information exactly as provided at the very top, wrapped in <p><strong>...<strong></p>.\n"
-        "Then output the rewritten resume as minimal semantic HTML only, following these rules:\n"
-        "1. Do NOT wrap any body paragraph text in <strong>—only headings and the name/contact block are bold.\n"
-        "2. Wrap section headings (e.g. Profile, Work Experience, Education) in <p><strong>Section Name</strong></p>.\n"
-        "3. Under each heading, list bullets inside a <ul> with plain <li> items—no additional tags.\n"
-        "4. Wrap any standalone paragraphs (e.g. summary) in plain <p>...<p> with no bold.\n"
-        "5. Do not include any extra HTML tags or inline styles.\n\n"
-        f"Job Description:\n{job_desc}\n\n"
-        f"Original Resume:\n{original}\n\n"
-        "Begin rewriting:" 
+        "You are an expert résumé editor. You will be given a résumé in plain text\n"
+        "inside a code block. **Your job is to rewrite every bullet, exactly as a\n"
+        "list item**, improving wording but **never deleting or merging** any bullet.\n\n"
+        "Output only valid HTML, following these rules:\n"
+        "1. Wrap the candidate’s name & contact in <p><strong>…</strong></p> exactly as provided.\n"
+        "2. Use <p><strong>Section Name</strong></p> for each section heading (e.g. SUMMARY, WORK EXPERIENCE, EDUCATION).\n"
+        "3. Under each heading, convert every original bullet into a <li> inside a single <ul>.\n"
+        "4. Do not drop, merge, or invent bullets—if the résumé contained 5 bullets under “Change Practitioner,” you must output 5 <li> items.\n"
+        "5. Wrap any standalone paragraphs (like the summary sentence) in plain <p>…</p> with no <strong>.\n"
+        "6. Do not include any other tags, styles, or text.\n\n"
+        "Here is the résumé to rewrite:\n"
+        f"{original_block}\n\n"
+        "Begin rewriting now:"
     )
     logging.debug("Rewrite Prompt:\n%s", prompt)
+
     try:
         resp = client.chat.completions.create(
             model="gpt-4",
-            messages=[{"role":"user","content":prompt}],
-            temperature=0.7,
+            messages=[{"role":"user","content": prompt}],
+            temperature=0.2,
             max_tokens=2000
         )
         html_out = resp.choices[0].message.content.strip()
         logging.debug("Rewritten Resume HTML:\n%s", html_out)
+
+        # Sanity check: ensure we didn't drop bullets
+        if html_out.count("<li>") < original.count("•"):
+            logging.warning(
+                "⚠️  Fewer <li> tags than original bullets!  Check the rewrite prompt."
+            )
+
         return jsonify(rewritten_html=html_out)
     except Exception as e:
         logging.error("Error in /rewrite:", exc_info=e)
@@ -83,7 +90,7 @@ def match_meter():
         "4. Do not include any other tags or styling.\n\n"
         f"Job Description:\n{jd}\n\n"
         f"Resume:\n{rs}\n\n"
-        "Begin now:" 
+        "Begin now:"
     )
     logging.debug("MatchMeter Prompt:\n%s", prompt)
     try:
