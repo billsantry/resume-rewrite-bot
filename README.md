@@ -1,96 +1,90 @@
-
+````markdown
 # Resume Rewrite Bot
 
- 
+**Optimize your resume bullet points with AI for improved clarity, ATS compatibility, and job alignment.**
 
-**Turn your resume bullets into job-matching achievements with AI – in seconds, right in your browser.**
-
-An open-source, AI-powered tool to optimize your resume bullet points for any job description. This tool uses OpenAI's GPT model to rewrite resume content to better match a job description, improving clarity, tone, and ATS (Applicant Tracking System) compatibility.
+An open-source application that uses OpenAI to rewrite resume content, preserving every original bullet while refining language and tone. Includes a fit-score evaluator (MatchMeter) and engaging status updates during processing.
 
 ---
 
-## ✨ What's New in v1.4
+## Version 1.5 Highlights 🚀
 
-MatchMeter now plays a more central role in helping you evaluate your fit before rewriting. The clearer your match, the better your results.
-
-- ✅ **MatchMeter:** Calculates a 1–10 fit score between your resume and a job description
-- ✅ **Gap Analysis:** Tells you what you’re missing and whether it’s worth applying
-- ✅ **Gradient Score Bar:** Color-coded 1–10 visual indicator with messaging
-- ✅ **Styled Output:** Rewritten bullets and assessment use professional, copy-pasteable formatting
+- 🕒 **Status Messages:** Enjoy rotating fun messages (e.g., “Polishing those bullets…”) during processing.
+- 🔨 **Backend Integration:** A lightweight Flask server (`app.py`) ensures reliable API handling.
+- 🛡️ **Bullet Preservation:** Every original bullet is retained; triggers a log warning if any are dropped.
+- ⚡ **MatchMeter Performance:** Powered by **gpt-3.5-turbo** for near-instant fit scoring.
 
 ---
 
-## Features 🔍
+## Key Features 🔍
 
-💡 **MatchMeter isn’t just a score — it’s a signal.** Whether you’re deciding to apply or prepping your resume, MatchMeter helps you know if a job is a strong match before you invest your time.
-
-- **No backend required** – runs entirely in the browser
-- **Private & secure** – your data stays on your machine
-- **Bring your own API key** – no server costs or rate-limiting
-- **Smart rewrites** – tailored to your resume and job description
-- **MatchMeter scoring** – resume alignment rating, gaps, and recommendations
+- ✏️ **Automated Bullet Rewrites:** GPT-powered enhancements for each resume bullet—no merging or omissions.
+- 📊 **MatchMeter Scoring:** Generates a 1–10 alignment score with detailed gap analysis and actionable recommendations.
+- 💬 **Status Messages:** Lighthearted updates like “Injecting confidence into each line…” to keep you engaged.
+- 🧩 **Semantic HTML Output:** Clean, copy-pasteable HTML for easy integration or export.
+- 🌐 **Self-Hosted Flexibility:** Run locally or in the cloud with your own OpenAI API key.
 
 ---
 
-## Demo
+## Demo 🎬
 
-
-
-Try it yourself! Open `index.html` in your browser and test it live with your own resume and any job description.
+After starting the server, visit <http://localhost:5000/> in your browser. Input your job description and resume bullets to see live rewrites and fit scoring.
 
 ---
 
-## How It Works
+## Usage Guide 🛠️
 
-1. Paste your **OpenAI API key**   [*Don’t have one? Get your key from OpenAI*](https://platform.openai.com/account/api-keys)
-2. Paste the **job description**
-3. Paste the **resume bullets** you want rewritten
-4. Click **Rewrite My Resume**
-5. Optionally run **MatchMeter** to see alignment
-6. Copy your new, polished bullets
-
----
-
-## Getting Started
-
-### 1. Clone or Download
-
-```bash
-git clone https://github.com/billsantry/resume-rewrite-bot.git
-cd resume-rewrite-bot
-```
-
-Or [Download ZIP](https://github.com/billsantry/resume-rewrite-bot/archive/refs/heads/main.zip) and extract it.
-
-### 2. Open in Browser
-
-Just double-click `index.html` in your browser to run it. No build tools needed!
-
----
-
-## Where to Get Your OpenAI API Key
-
-1. Sign in at: [https://platform.openai.com/account/api-keys](https://platform.openai.com/account/api-keys)
-2. Click “Create new secret key”
-3. Copy and paste the key into the tool when prompted
-
-> **Note**: You are responsible for any API usage costs incurred by your key.
+1. **Obtain an OpenAI API Key** (see 🔑 below).
+2. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. **Configure** your key by creating a `.env` file at the project root:
+   ```ini
+   OPENAI_API_KEY=sk-<YOUR_SECRET_KEY>
+   ```
+4. **Start the server**:
+   ```bash
+   export FLASK_APP=app.py   # macOS/Linux
+   set FLASK_APP=app.py      # Windows PowerShell
+   flask run
+   ```
+5. **Open the UI** at <http://127.0.0.1:5000/>.
+6. **Use the application**:
+   - Paste your **job description**.
+   - Paste your **resume bullets**.
+   - Click **Rewrite Resume** and observe the status messages.
+   - (Optional) Click **Run MatchMeter** for fit scoring.
+   - Copy or embed the resulting HTML output.
 
 ---
 
-## Technologies Used
+## OpenAI API Key Setup 🔑
 
-- HTML/CSS/JavaScript
-- OpenAI GPT-4 via Fetch API
+1. Sign in at: [OpenAI API Keys](https://platform.openai.com/account/api-keys)
+2. Create a new secret key.
+3. Add the key to your `.env` file as shown above.
 
----
-
-## License
-
-MIT License
+> *Note: API usage charges apply based on your OpenAI subscription.*
 
 ---
 
-## Credits
+## Technology Stack 🧰
 
-Inspired by the idea that **great resumes shouldn't require great writing skills—just the right AI support.**
+- **Backend:** Python, Flask
+- **Frontend:** HTML, CSS, JavaScript
+- **AI Models:** GPT-4, GPT-3.5-turbo
+- **Configuration:** dotenv (for environment variables)
+
+---
+
+## Contribution & License 📄
+
+This project is licensed under the **MIT License**. Contributions are welcome—please review the contributing guidelines before submitting.
+
+---
+
+## Acknowledgments 🙏
+
+Developed to make resume refinement accessible to all, leveraging AI to enhance clarity and alignment without sacrificing content integrity.
+````
