@@ -1,4 +1,5 @@
 import os
+import json
 import re
 import logging
 from flask import Flask, render_template, request, jsonify
@@ -16,6 +17,34 @@ if not OPENAI_API_KEY:
 client = OpenAI(api_key=OPENAI_API_KEY)
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 
+MODEL = "gpt-4.1"
+
+# ─── Helper: Render parsed resume JSON to HTML ─────────────────────────────────
+def render_resume_html(parsed):
+    html = []
+    # Name & contact
+    html.append(f"<p><strong>{parsed['name_contact']}</strong></p>")
+    for section in parsed["sections"]:
+        html.append(f"<p><strong>{section['heading']}</strong></p>")
+        # Paragraphs (e.g. summary)
+        for para in section.get("paragraphs", []):
+            html.append(f"<p>{para}</p>")
+        # Work items
+        for item in section.get("items", []):
+            title_line = f"{item['title']}, {item['company']} | {item['dates']}"
+            html.append(f"<p>{title_line}</p>")
+            html.append("<ul>")
+            for b in item["bullets"]:
+                html.append(f"<li>{b}</li>")
+            html.append("</ul>")
+        # Other list items (e.g. skills)
+        if "list_items" in section:
+            html.append("<ul>")
+            for li in section["list_items"]:
+                html.append(f"<li>{li}</li>")
+            html.append("</ul>")
+    return "\n".join(html)
+
 # ─── Routes ────────────────────────────────────────────────────────────────────
 @app.route("/", methods=["GET"])
 def index():
@@ -29,47 +58,109 @@ def rewrite_resume():
     if not original:
         return jsonify(error="No resume text provided."), 400
 
-    # Fence the original text so bullets aren’t dropped
-    original_block = f"```\n{original}\n```"
-
-    # Prompt model to rewrite every bullet in place, preserving all items
-    prompt = (
-        "You are an expert résumé editor. You will be given a résumé in plain text\n"
-        "inside a code block. **Your job is to rewrite every bullet, exactly as a\n"
-        "list item**, improving wording but **never deleting or merging** any bullet.\n\n"
-        "Output only valid HTML, following these rules:\n"
-        "1. Wrap the candidate’s name & contact in <p><strong>…</strong></p> exactly as provided.\n"
-        "2. Use <p><strong>Section Name</strong></p> for each section heading (e.g. SUMMARY, WORK EXPERIENCE, EDUCATION).\n"
-        "3. Under each heading, convert every original bullet into a <li> inside a single <ul>.\n"
-        "4. Do not drop, merge, or invent bullets—if the résumé contained 5 bullets under “Change Practitioner,” you must output 5 <li> items.\n"
-        "5. Wrap any standalone paragraphs (like the summary sentence) in plain <p>…</p> with no <strong>.\n"
-        "6. Do not include any other tags, styles, or text.\n\n"
-        "Here is the résumé to rewrite:\n"
-        f"{original_block}\n\n"
-        "Begin rewriting now:"
+    # Phase 1: Parse the resume into structured JSON
+    parse_resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role":"system","content":"You are a resume parser."},
+            {"role":"user","content":f"Parse this resume into JSON:\n```\n{original}\n```"}
+        ],
+        functions=[{
+            "name": "parse_resume",
+            "description": "Parse a plain-text resume into structured JSON",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name_contact": {"type": "string"},
+                    "sections": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "heading": {"type": "string"},
+                                "paragraphs": {"type": "array", "items": {"type": "string"}},
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "title": {"type": "string"},
+                                            "company": {"type": "string"},
+                                            "dates": {"type": "string"},
+                                            "bullets": {"type": "array", "items": {"type": "string"}}
+                                        }
+                                    }
+                                },
+                                "list_items": {"type": "array", "items": {"type": "string"}}
+                            }
+                        }
+                    }
+                },
+                "required": ["name_contact", "sections"]
+            }
+        }],
+        function_call={"name": "parse_resume"}
     )
-    logging.debug("Rewrite Prompt:\n%s", prompt)
+    parsed = json.loads(parse_resp.choices[0].message.function_call.arguments)
+    logging.debug("Parsed resume JSON:\n%s", json.dumps(parsed, indent=2))
 
-    try:
-        resp = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role":"user","content": prompt}],
-            temperature=0.2,
-            max_tokens=2000
-        )
-        html_out = resp.choices[0].message.content.strip()
-        logging.debug("Rewritten Resume HTML:\n%s", html_out)
+    # Phase 2: Rewrite only the bullets
+    rewrite_resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role":"system","content":"You are an expert résumé editor that only returns JSON."},
+            {"role":"user","content":(
+                "Rewrite **only** the `bullets` arrays in this resume JSON to better match "
+                "the job description below. Preserve all other fields exactly and return "
+                "the full JSON.\n\n"
+                f"Job Description:\n{job_desc}\n\n"
+                f"Resume JSON:\n{json.dumps(parsed)}"
+            )}
+        ],
+        functions=[{
+            "name": "rewrite_bullets",
+            "description": "Rewrite the bullets in the resume JSON without changing other fields",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name_contact": {"type": "string"},
+                    "sections": {
+                        "type": "array",
+                        "items": {
+                            "type":"object",
+                            "properties": {
+                                "heading": {"type":"string"},
+                                "paragraphs": {"type":"array","items":{"type":"string"}},
+                                "items": {
+                                    "type":"array",
+                                    "items": {
+                                        "type":"object",
+                                        "properties": {
+                                            "title":{"type":"string"},
+                                            "company":{"type":"string"},
+                                            "dates":{"type":"string"},
+                                            "bullets":{"type":"array","items":{"type":"string"}}
+                                        }
+                                    }
+                                },
+                                "list_items": {"type":"array","items":{"type":"string"}}
+                            }
+                        }
+                    }
+                },
+                "required": ["name_contact", "sections"]
+            }
+        }],
+        function_call={"name": "rewrite_bullets"},
+        temperature=0.2,
+        max_tokens=2000
+    )
+    rewritten = json.loads(rewrite_resp.choices[0].message.function_call.arguments)
+    logging.debug("Rewritten resume JSON:\n%s", json.dumps(rewritten, indent=2))
 
-        # Sanity check: ensure we didn't drop bullets
-        if html_out.count("<li>") < original.count("•"):
-            logging.warning(
-                "⚠️  Fewer <li> tags than original bullets!  Check the rewrite prompt."
-            )
-
-        return jsonify(rewritten_html=html_out)
-    except Exception as e:
-        logging.error("Error in /rewrite:", exc_info=e)
-        return jsonify(error="GPT-4 failed. Please try again later."), 500
+    # Render to HTML and return
+    html_out = render_resume_html(rewritten)
+    return jsonify(rewritten_html=html_out)
 
 @app.route("/matchmeter", methods=["POST"])
 def match_meter():
@@ -79,13 +170,13 @@ def match_meter():
     if not jd or not rs:
         return jsonify(error="Both job description and resume are required."), 400
 
-    # Prompt model to emit HTML only for gap analysis
     prompt = (
         "You are a careful career coach. ONLY use the facts below—do NOT hallucinate.\n"
         "On the FIRST LINE, output ONLY your fit score as X/10 with NO extra text.\n"
         "Then emit HTML only, following these rules:\n"
-        "1. Wrap each subhead (Positive Matches, Gaps and Feedback, Recommendations) in <p><strong>Subhead</strong></p>.\n"
-        "2. Under each subhead, list items inside a <ul> of <li> bullets—no bold or extra tags.\n"
+        "1. Wrap each subhead (Positive Matches, Gaps and Feedback, Recommendations)\n"
+        "   in <p><strong>Subhead</strong></p>.\n"
+        "2. Under each subhead, list items inside a <ul> of <li> bullets—no extra tags.\n"
         "3. Do not wrap any other text in <strong>.\n"
         "4. Do not include any other tags or styling.\n\n"
         f"Job Description:\n{jd}\n\n"
@@ -93,21 +184,16 @@ def match_meter():
         "Begin now:"
     )
     logging.debug("MatchMeter Prompt:\n%s", prompt)
-    try:
-        resp = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role":"user","content":prompt}],
-            temperature=0.5,
-            max_tokens=900
-        )
-        html_out = resp.choices[0].message.content.strip()
-        logging.debug("MatchMeter HTML:\n%s", html_out)
-        match = re.search(r"(\d+(?:\.\d+)?)/10", html_out)
-        score = match.group(1) if match else "0"
-        return jsonify(score=score, feedback_html=html_out)
-    except Exception as e:
-        logging.error("Error in /matchmeter:", exc_info=e)
-        return jsonify(error="GPT-4 failed. Please try again later."), 500
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role":"user","content":prompt}],
+        temperature=0.5,
+        max_tokens=900
+    )
+    html_out = resp.choices[0].message.content.strip()
+    match = re.search(r"(\d+(?:\.\d+)?)/10", html_out)
+    score = match.group(1) if match else "0"
+    return jsonify(score=score, feedback_html=html_out)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
