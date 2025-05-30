@@ -67,6 +67,11 @@
     <button onclick="runMatchMeter()" class="btn btn-primary w-100">
       <strong>Run MatchMeter</strong>
     </button>
+    <!-- Moved status/spinner here below MatchMeter -->
+    <div class="text-center my-3">
+      <div id="spinner" class="spinner"></div>
+      <p id="statusMessage" class="mt-2 mb-0 text-muted"></p>
+    </div>
     <div id="matchMeterOutput" class="mt-3 p-3 border rounded bg-light">
       MatchMeter results will appear here.
     </div>
@@ -77,16 +82,17 @@
       Consider revising your resume or choosing a closer-fit role before rewriting.
     </div>
 
-    <button onclick="rewriteResume()"
-            class="btn btn-secondary w-100 mt-3"
-            disabled id="rewriteBtn">
-      <strong>Rewrite My Resume</strong>
-    </button>
+    <!-- Rewrite button -->
+<button onclick="rewriteResume()"
+        class="btn btn-secondary w-100 mt-3"
+        id="rewriteBtn">
+  <strong>Rewrite My Resume</strong>
+</button>
 
-   <!-- centered spinner + rotating text -->
+<!-- Spinner/status for Rewrite flow -->
 <div class="text-center my-3">
-  <div id="spinner" class="spinner"></div>
-  <p id="statusMessage" class="mt-2 mb-0 text-muted"></p>
+  <div id="spinnerRewrite" class="spinner"></div>
+  <p id="statusMessageRewrite" class="mt-2 mb-0 text-muted"></p>
 </div>
 
     <h2 class="mt-4"><strong>Rewritten Resume:</strong></h2>

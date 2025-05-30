@@ -19,24 +19,37 @@ logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %
 
 MODEL = "gpt-4.1"
 
+# ─── Helper: Render parsed resume JSON to HTML ─────────────────────────────────
 def render_resume_html(parsed):
     html = []
     # Name & contact
     html.append(f"<p><strong>{parsed['name_contact']}</strong></p>")
-    for section in parsed["sections"]:
+    for section in parsed.get("sections", []):
         if "heading" in section:
             html.append(f"<p><strong>{section['heading']}</strong></p>")
         # Paragraphs (e.g. summary)
         for para in section.get("paragraphs", []):
             html.append(f"<p>{para}</p>")
-        # Work items
+        # Work or education items
         for item in section.get("items", []):
-            title_line = f"{item['title']}, {item['company']} | {item['dates']}"
+            # Build the title line with optional fields
+            parts = [item.get("title", ""), item.get("company", "")]
+            if item.get("dates"):
+                parts.append(item["dates"])
+            title_line = " | ".join([p for p in parts if p])
             html.append(f"<p>{title_line}</p>")
-            html.append("<ul>")
-            for b in item["bullets"]:
-                html.append(f"<li>{b}</li>")
-            html.append("</ul>")
+            # Bullets
+            if "bullets" in item:
+                html.append("<ul>")
+                for b in item["bullets"]:
+                    html.append(f"<li>{b}</li>")
+                html.append("</ul>")
+            # Additional highlights (optional)
+            if "additional_highlights" in item:
+                html.append("<ul>")
+                for h in item["additional_highlights"]:
+                    html.append(f"<li>{h}</li>")
+                html.append("</ul>")
         # Other list items (e.g. skills)
         if "list_items" in section:
             html.append("<ul>")
@@ -102,8 +115,7 @@ def rewrite_resume():
             }],
             function_call={"name": "parse_resume"}
         )
-        parsed_args = parse_resp.choices[0].message.function_call.arguments
-        parsed = json.loads(parsed_args)
+        parsed = json.loads(parse_resp.choices[0].message.function_call.arguments)
         logging.debug("Parsed resume JSON:\n%s", json.dumps(parsed, indent=2))
 
         # Phase 2: Rewrite only the bullets
@@ -157,15 +169,13 @@ def rewrite_resume():
             temperature=0.2,
             max_tokens=2000
         )
-        rewritten_args = rewrite_resp.choices[0].message.function_call.arguments
-        rewritten = json.loads(rewritten_args)
+        rewritten = json.loads(rewrite_resp.choices[0].message.function_call.arguments)
         logging.debug("Rewritten resume JSON:\n%s", json.dumps(rewritten, indent=2))
 
-        # Render to HTML and return
         html_out = render_resume_html(rewritten)
         return jsonify(rewritten_html=html_out)
 
-    except Exception as e:
+    except Exception:
         logging.exception("Error during resume rewriting process.")
         return jsonify(error="Sorry, we hit a snag rewriting the resume. Try again!"), 500
 
@@ -198,7 +208,11 @@ def match_meter():
         max_tokens=900
     )
     html_out = resp.choices[0].message.content.strip()
-    match = re.search(r"(\d+(?:\.\d+)?)/10", html_out)
+    # Extract score using \\s (whitespace) to handle any spaces or NBSPs
+    match = re.search(r"(\d+(?:\.\d+)?)\s*/\s*10", html_out)
+    if not match:
+        clean_text = re.sub(r"<[^>]+>", "", html_out)
+        match = re.search(r"(\d+(?:\.\d+)?)\s*/\s*10", clean_text)
     score = match.group(1) if match else "0"
     return jsonify(score=score, feedback_html=html_out)
 

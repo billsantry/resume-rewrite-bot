@@ -25,7 +25,7 @@ const REWRITE_STATUS_MESSAGES = [
 
 let statusInterval;
 
-// Start rotating status messages from the given array
+// Start rotating status messages in the given container
 function startStatusMessages(container, messages) {
   let idx = 0;
   container.textContent = messages[idx];
@@ -41,22 +41,22 @@ function stopStatusMessages(container) {
   container.textContent = '';
 }
 
-// Run MatchMeter (Gap Analysis)
+// ─── MatchMeter flow ──────────────────────────────────────────────────────────
 async function runMatchMeter() {
   const jobDesc    = document.getElementById("jobDesc").value.trim();
   const resume     = document.getElementById("resume").value.trim();
   const output     = document.getElementById("matchMeterOutput");
   const spinner    = document.getElementById("spinner");
   const statusDiv  = document.getElementById("statusMessage");
-  const rewriteBtn = document.getElementById("rewriteBtn");
   const warning    = document.getElementById("lowMatchWarning");
+  const rewriteBtn = document.getElementById("rewriteBtn");
 
   if (!jobDesc || !resume) {
     alert("Please fill in both job description and resume fields.");
     return;
   }
 
-  // Show spinner & start MatchMeter messages
+  // Show spinner & status rotation, clear previous output, disable rewrite
   spinner.style.display = "block";
   startStatusMessages(statusDiv, MATCH_STATUS_MESSAGES);
   output.innerHTML      = "";
@@ -79,25 +79,22 @@ async function runMatchMeter() {
     const score        = parseFloat(json.score) || 0;
     const feedbackHTML = json.feedback_html || "";
 
-    // Warn & disable rewrite if score < threshold
-    if (score < MIN_MATCH_SCORE) {
+    // Enable rewrite if score >= threshold
+    if (score >= MIN_MATCH_SCORE) {
+      rewriteBtn.disabled = false;
+    } else {
       warning.style.display = "block";
       rewriteBtn.disabled   = true;
-    } else {
-      warning.style.display = "none";
-      rewriteBtn.disabled   = false;
     }
 
-    // Color by score bracket
+    // Build gauge
     let barColor;
-    if (score <= 2)      barColor = "#f44336";   // red
-    else if (score <= 5) barColor = "#ff9800";   // orange
-    else if (score <= 7) barColor = "#ffeb3b";   // yellow
-    else                  barColor = "#4caf50";   // green
-
+    if (score <= 2)      barColor = "#f44336";
+    else if (score <= 5) barColor = "#ff9800";
+    else if (score <= 7) barColor = "#ffeb3b";
+    else                  barColor = "#4caf50";
     const pct = Math.min(Math.max(score * 10, 0), 100);
 
-    // Render gauge + server-generated feedback HTML
     output.innerHTML = `
       <div class="match-meter mt-3">
         <h5><strong>MatchMeter Score: ${score}/10</strong></h5>
@@ -120,23 +117,25 @@ async function runMatchMeter() {
   }
 }
 
-// Rewrite Resume
+// ─── Resume Rewrite flow ──────────────────────────────────────────────────────
 async function rewriteResume() {
   const jobDesc   = document.getElementById("jobDesc").value.trim();
   const resumeTxt = document.getElementById("resume").value.trim();
   const resultBox = document.getElementById("result");
-  const spinner   = document.getElementById("spinner");
-  const statusDiv = document.getElementById("statusMessage");
+  const spinner   = document.getElementById("spinnerRewrite");
+  const statusDiv = document.getElementById("statusMessageRewrite");
+  const copyBtn   = document.getElementById("copyBtn");
 
-  if (!resumeTxt) {
-    alert("Please enter your resume text.");
+  if (!jobDesc || !resumeTxt) {
+    alert("Please fill in both job description and resume to rewrite.");
     return;
   }
 
-  // Show spinner & start Rewrite messages
+  // Show rewrite spinner & status rotation, clear previous result
   spinner.style.display = "block";
   startStatusMessages(statusDiv, REWRITE_STATUS_MESSAGES);
   resultBox.innerHTML   = "";
+  copyBtn.style.display  = "none";
 
   try {
     const res  = await fetch("/rewrite", {
@@ -151,9 +150,8 @@ async function rewriteResume() {
       return;
     }
 
-    // Inject the server-generated HTML
     resultBox.innerHTML = json.rewritten_html || "";
-    document.getElementById("copyBtn").style.display = "inline-block";
+    copyBtn.style.display = "inline-block";
   } catch (err) {
     resultBox.innerHTML = `<p class="text-danger"><strong>Error contacting API:</strong> ${err.message}</p>`;
   } finally {
@@ -162,7 +160,7 @@ async function rewriteResume() {
   }
 }
 
-// Copy to Clipboard
+// ─── Copy to clipboard ────────────────────────────────────────────────────────
 function copyToClipboard() {
   const resultBox = document.getElementById("result");
   const range     = document.createRange();
