@@ -72,7 +72,7 @@ def main() -> int:
     print(profile.model_dump_json(indent=2))
 
     banner("Step 2: search_usajobs")
-    keyword = profile.keywords[0] if profile.keywords else "cybersecurity"
+    keyword = "cybersecurity"
     print(f"Using keyword: {keyword!r}")
     params = SearchParams(
         keyword=keyword,
