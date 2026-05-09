@@ -205,3 +205,34 @@ class JobResult(BaseModel):
     gaps: list[str] = Field(default_factory=list)
     eligibility_tag: EligibilityTag
     eligibility_note: str = Field(max_length=80)
+
+
+# ---------------------------------------------------------------------------
+# SessionState and SessionResult: top-level shapes returned by the agent
+# ---------------------------------------------------------------------------
+
+
+class SessionState(BaseModel):
+    """Top-of-results metadata describing the search context.
+
+    Returned alongside results so the frontend can render the
+    confirmation banner and any disambiguation prompts.
+    """
+
+    profile_summary: str
+    queries_run: int
+    listings_evaluated: int
+    needs_disambiguation: bool = False
+    disambiguation_question: str | None = None
+
+
+class SessionResult(BaseModel):
+    """Complete output of a Cert session.
+
+    The single JSON shape returned by POST /cert/run. The frontend
+    renders session_state as the confirmation banner and results as
+    cards.
+    """
+
+    session_state: SessionState
+    results: list[JobResult]
