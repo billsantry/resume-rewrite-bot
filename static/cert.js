@@ -13,16 +13,23 @@
 (function () {
   "use strict";
 
-  // ---------- Config ----------
-
-  const STATUS_MESSAGES = [
-    "Reading your resume…",
-    "Checking which postings you're eligible for…",
-    "Searching open federal jobs…",
-    "Scoring fit against your background…",
-    "Picking the strongest matches…",
+const STATUS_MESSAGES = [
+    "Decoding your career into structured data...",
+    "Inferring your series and grade ceiling...",
+    "Asking USAJobs what's actually open today...",
+    "Filtering out the 'open to public, but not really' postings...",
+    "Cross-checking your hiring path eligibility...",
+    "Reading qualifications text like a federal HR specialist...",
+    "Scoring honestly — no 9/10s for everyone...",
+    "Reminding the scorer that average should mean a 6...",
+    "Drafting reasons that cite your actual experience...",
+    "Naming the gaps without sugarcoating them...",
+    "Sorting by fit, not by alphabet...",
+    "Picking the seven that actually deserve your attention...",
   ];
-  const STATUS_MESSAGE_HOLD_MS = 1800;
+  const STATUS_MESSAGE_HOLD_MS = 2500;
+
+  // ---------- DOM helpers ----------
 
   // ---------- DOM helpers ----------
 
