@@ -142,20 +142,35 @@ def run_session(
 def _needs_disambiguation(profile: CandidateProfile) -> bool:
     """Whether to ask the user to clarify before searching.
 
-    Per agent_system.md: only when parse_confidence is medium/low AND
-    an ambiguity hints at federal-status uncertainty. Other ambiguities
-    (date precision, series inference) are not worth blocking the
-    search for.
+    Only block on disambiguation when the parser is genuinely unsure
+    whether the candidate is currently a federal employee. Other
+    ambiguities (date precision, series inference, veteran preference)
+    do not warrant interrupting the user; they are handled downstream
+    by tags, scorer caveats, or the [Edit] affordance.
     """
     if profile.parse_confidence == "high":
         return False
 
-    federal_hints = ("federal", "fed", "current employer", "status", "employee")
+    # If the parser determined the candidate IS a current fed, trust
+    # that even at medium/low confidence; the rest of the pipeline
+    # works correctly with that assumption.
+    if profile.current_federal_employee:
+        return False
+
+    # Only at low confidence on a non-federal classification do we
+    # ask. Medium confidence on non-federal is good enough to search.
+    if profile.parse_confidence != "low":
+        return False
+
+    # And only if an ambiguity actually concerns federal status.
+    uncertainty_words = ("uncertain", "unclear", "cannot determine", "ambiguous")
+    federal_words = ("federal", "fed", "status", "employee", "employer")
+
     for ambiguity in profile.ambiguities:
         lower = ambiguity.lower()
-        if "veteran" in lower:  # veteran preference is handled separately
-            continue
-        if any(hint in lower for hint in federal_hints):
+        if any(u in lower for u in uncertainty_words) and any(
+            f in lower for f in federal_words
+        ):
             return True
     return False
 

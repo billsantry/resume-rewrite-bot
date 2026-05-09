@@ -11,6 +11,9 @@ from dotenv import load_dotenv
 # OpenAI 1.x clients
 from openai import OpenAI, AzureOpenAI
 
+# Cert agent orchestrator
+from cert.agent import run_session
+
 # ─── Setup ─────────────────────────────────────────────────────────────────────
 load_dotenv()
 app = Flask(__name__, template_folder="templates", static_folder="static")
@@ -472,6 +475,42 @@ def match_meter():
 
     feedback_html = remainder.strip() if remainder else text_out.strip()
     return jsonify(score=str(final_score), feedback_html=feedback_html)
+
+
+# ─── Cert routes ───────────────────────────────────────────────────────────────
+
+
+@app.route("/cert/run", methods=["POST"])
+def cert_run():
+    """Run a complete Cert session.
+
+    Expects JSON: {"resume_text": str, "user_prompt": str | null}
+    Returns: SessionResult JSON (see cert.schemas).
+    """
+    try:
+        body = request.get_json(silent=True) or {}
+    except Exception:
+        return jsonify({"error": "Request body must be JSON"}), 400
+
+    resume_text = (body.get("resume_text") or "").strip()
+    user_prompt = (body.get("user_prompt") or None)
+
+    if not resume_text:
+        return jsonify({"error": "resume_text is required"}), 400
+
+    try:
+        result = run_session(resume_text=resume_text, user_prompt=user_prompt)
+    except RuntimeError as e:
+        # Auth issues, missing env vars, etc. — actionable for the operator,
+        # opaque to the end user.
+        app.logger.error("Cert run failed: %s", e)
+        return jsonify({"error": "Cert is temporarily unavailable."}), 503
+    except Exception as e:
+        app.logger.exception("Cert run crashed: %s", e)
+        return jsonify({"error": "Something went wrong running Cert."}), 500
+
+    # Pydantic model_dump() gives us a clean JSON-ready dict
+    return jsonify(result.model_dump()), 200
 
 
 # ─── Dev/Prod server bind ──────────────────────────────────────────────────────
