@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ResumeRewriter</title>
+  <title>FedCert</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Font Awesome Icons -->
   <script src="https://kit.fontawesome.com/960f50b335.js" crossorigin="anonymous"></script>
-  <!-- Favicon (place favicon.ico in your static folder) -->
+  <!-- Favicon -->
   <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
   <style>
     body {
@@ -45,68 +45,82 @@
       color: #6c757d;
       text-decoration: none;
     }
+
+    /* FedCert result card styles */
+    .cert-result-card {
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-left: 4px solid #3498db;
+      border-radius: 0.375rem;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .cert-result-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+    .cert-result-title { margin: 0 0 0.25rem 0; font-size: 1.05rem; }
+    .cert-result-title a { color: inherit; text-decoration: none; }
+    .cert-result-title a:hover { text-decoration: underline; }
+    .cert-result-meta { font-size: 0.875rem; color: #6c757d; margin-bottom: 0.5rem; }
+    .cert-score-badge {
+      flex-shrink: 0;
+      background: #3498db; color: #fff;
+      padding: 0.25rem 0.6rem; border-radius: 0.25rem;
+      font-weight: 600; font-size: 0.95rem;
+      white-space: nowrap;
+    }
+    .cert-score-badge.weak { background: #6c757d; }
+    .cert-eligibility-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 0.25rem;
+      margin-bottom: 0.5rem;
+      background: #e9ecef; color: #495057;
+    }
+    .cert-eligibility-tag.open_to_public { background: #d1e7dd; color: #0a3622; }
+    .cert-eligibility-tag.status_qualified { background: #cfe2ff; color: #084298; }
+    .cert-eligibility-tag.veterans_qualified { background: #fff3cd; color: #664d03; }
+    .cert-match-reason { font-size: 0.95rem; margin: 0.5rem 0 0 0; }
+    .cert-gaps-toggle { font-size: 0.85rem; color: #3498db; cursor: pointer; user-select: none; margin-top: 0.5rem; }
+    .cert-gaps { font-size: 0.85rem; color: #495057; margin-top: 0.5rem; padding-left: 1.25rem; }
   </style>
 </head>
 <body>
   <div class="container">
-   <h1 class="text-center">
-  <i class="fa-solid fa-user-pen text-primary me-1" style="font-size: 2.25rem;"></i><strong>ResumeRewriter</strong>
-</h1>
+    <h1 class="text-center">
+      <i class="fa-solid fa-bullseye text-primary me-1" style="font-size: 2.25rem;"></i><strong>FedCert</strong>
+    </h1>
     <p class="text-center text-muted">
-      Quickly analyze your resume’s fit for a job and get a polished, AI-enhanced version.
+      Paste your resume. Get a short, honest list of currently-open federal
+      jobs that actually fit your background.
     </p>
 
-    <label for="jobDesc"><strong>Paste the Job Description:</strong></label>
-    <textarea id="jobDesc" class="form-control mb-3" rows="6"
-              placeholder="Job description..."></textarea>
+    <label for="resume" class="mt-3"><strong>Paste your resume:</strong></label>
+    <textarea id="resume" class="form-control mb-3" rows="10"
+              placeholder="Paste the full text of your resume here..."></textarea>
 
-    <label for="resume"><strong>Paste Your Resume Section:</strong></label>
-    <textarea id="resume" class="form-control mb-3" rows="6"
-              placeholder="Your current resume bullet points..."></textarea>
+    <label for="certPrompt" class="form-label">
+      <strong>Optional:</strong> tell FedCert what kind of role you're looking for
+    </label>
+    <textarea id="certPrompt" class="form-control mb-3" rows="2"
+      placeholder="e.g. cybersecurity, AI policy, acquisition strategy"></textarea>
 
-    <button onclick="runMatchMeter()" class="btn btn-primary w-100">
-      <strong>Run MatchMeter</strong>
+    <button id="certRunBtn" class="btn btn-primary w-100">
+      <strong>Run FedCert</strong>
     </button>
-    <!-- Moved status/spinner here below MatchMeter -->
-    <div class="text-center my-3">
-      <div id="spinner" class="spinner"></div>
-      <p id="statusMessage" class="mt-2 mb-0 text-muted"></p>
-    </div>
-    <div id="matchMeterOutput" class="mt-3 p-3 border rounded bg-light">
-      MatchMeter results will appear here.
+
+    <div id="certStatusStrip" class="text-center my-3" style="display: none;">
+      <div class="spinner" style="display: inline-block;"></div>
+      <p id="certStatusMessage" class="mt-2 mb-0 text-muted"></p>
     </div>
 
-    <!-- Low-match warning -->
-    <div id="lowMatchWarning" class="alert alert-warning mt-3" style="display: none;">
-      ⚠️ Your MatchMeter score is below the minimum threshold (5/10).  
-      Consider revising your resume or choosing a closer-fit role before rewriting.
-    </div>
+    <div id="certError" class="alert alert-warning mt-3" style="display: none;"></div>
 
-    <!-- Rewrite button -->
-<button onclick="rewriteResume()"
-        class="btn btn-secondary w-100 mt-3"
-        id="rewriteBtn">
-  <strong>Rewrite My Resume</strong>
-</button>
+    <div id="certProfileSummary" class="alert alert-info mt-3" style="display: none;"></div>
 
-<!-- Spinner/status for Rewrite flow -->
-<div class="text-center my-3">
-  <div id="spinnerRewrite" class="spinner"></div>
-  <p id="statusMessageRewrite" class="mt-2 mb-0 text-muted"></p>
-</div>
-
-    <h2 class="mt-4"><strong>Rewritten Resume:</strong></h2>
-    <p class="text-muted">
-      Your enhanced resume content will appear below. You can copy it for easy use.
-    </p>
-    <div id="result" contenteditable="true" class="p-3 border rounded" style="background-color: #fff;"></div>
-    <button id="copyBtn" onclick="copyToClipboard()"
-            class="btn btn-secondary mt-3" style="display: none;">
-      <strong>📋 Copy to Clipboard</strong>
-    </button>
+    <div id="certResults" class="mt-3"></div>
 
     <div class="mt-5 text-center">
-      <a href="mailto:billsantry@gmail.com?subject=ResumeRewriter%20Feedback"
+      <a href="mailto:billsantry@gmail.com?subject=FedCert%20Feedback"
          class="btn btn-outline-dark">
         💬 Report Comments, Compliments or Bugs
       </a>
@@ -117,6 +131,6 @@
     <p>&copy; <a href="mailto:billsantry@gmail.com">Bill Santry</a></p>
   </footer>
 
-  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <script src="{{ url_for('static', filename='cert.js') }}"></script>
 </body>
 </html>
