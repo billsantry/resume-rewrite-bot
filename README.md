@@ -1,90 +1,58 @@
-````markdown
-# Resume Rewrite Bot
+# FedCert
 
-**Optimize your resume bullet points with AI for improved clarity, ATS compatibility, and job alignment.**
+**Agentic federal job-matching tool that ranks only the USAJobs postings you are actually eligible to win.**
 
-An open-source application that uses OpenAI to rewrite resume content, preserving every original bullet while refining language and tone. Includes a fit-score evaluator (MatchMeter) and engaging status updates during processing.
-
----
-
-## Version 1.5 Highlights 🚀
-
-- 🕒 **Status Messages:** Enjoy rotating fun messages (e.g., “Polishing those bullets…”) during processing.
-- 🔨 **Backend Integration:** A lightweight Flask server (`app.py`) ensures reliable API handling.
-- 🛡️ **Bullet Preservation:** Every original bullet is retained; triggers a log warning if any are dropped.
-- ⚡ **MatchMeter Performance:** Powered by **gpt-3.5-turbo** for near-instant fit scoring.
+FedCert reads a resume the way a federal HR specialist would, then returns a small, honest, ranked list of currently open federal job postings with eligibility tags and one-sentence reasons drawn from your actual resume content. It is built for calibrated, honest scoring rather than inflated match rates. Built with Claude and OpenAI.
 
 ---
 
-## Key Features 🔍
+## How It Works
 
-- ✏️ **Automated Bullet Rewrites:** GPT-powered enhancements for each resume bullet—no merging or omissions.
-- 📊 **MatchMeter Scoring:** Generates a 1–10 alignment score with detailed gap analysis and actionable recommendations.
-- 💬 **Status Messages:** Lighthearted updates like “Injecting confidence into each line…” to keep you engaged.
-- 🧩 **Semantic HTML Output:** Clean, copy-pasteable HTML for easy integration or export.
-- 🌐 **Self-Hosted Flexibility:** Run locally or in the cloud with your own OpenAI API key.
+FedCert runs one structured session per resume. It is not a chatbot. You paste a resume and an optional plain-language preference, and it produces a single ranked result set, then stops.
 
----
+Each session follows a three-tool pipeline (`cert/tools/registry.py`):
 
-## Demo 🎬
+1. **parse_resume(resume_text)** runs once to build a structured `CandidateProfile` that every later decision depends on.
+2. **search_usajobs(params)** runs 1 to 3 times, querying the USAJobs API (`data.usajobs.gov`) with parameters derived from the profile and your preference.
+3. **score_match(profile, listing)** runs once per listing (up to 25, after deduplication) to produce a calibrated `MatchScore` with an eligibility tag and a one-sentence rationale.
 
-After starting the server, visit <http://localhost:5000/> in your browser. Input your job description and resume bullets to see live rewrites and fit scoring.
+The orchestration rules live in human-readable form in `prompts/agent_system.md`. Today `app.py` follows those rules imperatively. The design lets the same prompt and tool registry drop into an agentic tool-use API (Anthropic tool use or the OpenAI Responses API) without a code rewrite.
 
 ---
 
-## Usage Guide 🛠️
+## Architecture
 
-1. **Obtain an OpenAI API Key** (see 🔑 below).
-2. **Install dependencies**:
+- **Backend:** Python, Flask. The `/cert/run` endpoint accepts `{"resume_text", "user_prompt"}` and returns a structured `SessionResult`.
+- **Agent core:** `cert/agent.py` orchestrator, `cert/schemas.py` Pydantic models, `cert/services/` (resume parser, USAJobs search, match scorer), and `cert/tools/registry.py`.
+- **LLM layer:** `cert/llm.py` is the only module that imports a model SDK. It returns Pydantic-validated structured output and defaults to Anthropic `claude-sonnet-4-6`, with OpenAI `gpt-4o-mini` available as a second provider.
+- **Prompts:** versioned Markdown in `prompts/` (`agent_system.md`, `resume_parser.md`, `matchmeter_v2.md`).
+- **Frontend:** HTML, CSS, JavaScript (`templates/index.html`, `static/`, `script.js`).
+
+---
+
+## Setup
+
+1. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
-3. **Configure** your key by creating a `.env` file at the project root:
+2. **Configure keys** in a `.env` file at the project root:
    ```ini
-   OPENAI_API_KEY=sk-<YOUR_SECRET_KEY>
+   ANTHROPIC_API_KEY=sk-ant-...
+   OPENAI_API_KEY=sk-...
+   USAJOBS_API_KEY=...
+   USAJOBS_USER_EMAIL=you@example.com
    ```
-4. **Start the server**:
+   The USAJobs API requires both the key and the email address that registered it. Get a key at https://developer.usajobs.gov/.
+3. **Run the server:**
    ```bash
-   export FLASK_APP=app.py   # macOS/Linux
-   set FLASK_APP=app.py      # Windows PowerShell
-   flask run
+   python app.py
    ```
-5. **Open the UI** at <http://127.0.0.1:5000/>.
-6. **Use the application**:
-   - Paste your **job description**.
-   - Paste your **resume bullets**.
-   - Click **Rewrite Resume** and observe the status messages.
-   - (Optional) Click **Run MatchMeter** for fit scoring.
-   - Copy or embed the resulting HTML output.
+   The app binds to `127.0.0.1:5001` by default (override with `FLASK_HOST` and `PORT`).
+4. **Open** http://127.0.0.1:5001/, paste a resume and an optional preference, and run a session.
 
 ---
 
-## OpenAI API Key Setup 🔑
+## License
 
-1. Sign in at: [OpenAI API Keys](https://platform.openai.com/account/api-keys)
-2. Create a new secret key.
-3. Add the key to your `.env` file as shown above.
-
-> *Note: API usage charges apply based on your OpenAI subscription.*
-
----
-
-## Technology Stack 🧰
-
-- **Backend:** Python, Flask
-- **Frontend:** HTML, CSS, JavaScript
-- **AI Models:** GPT-4, GPT-3.5-turbo
-- **Configuration:** dotenv (for environment variables)
-
----
-
-## Contribution & License 📄
-
-This project is licensed under the **MIT License**. Contributions are welcome—please review the contributing guidelines before submitting.
-
----
-
-## Acknowledgments 🙏
-
-Developed to make resume refinement accessible to all, leveraging AI to enhance clarity and alignment without sacrificing content integrity.
-````
+MIT License. Contributions welcome.
